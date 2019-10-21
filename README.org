@@ -1,0 +1,53 @@
+#+TITLE: A Very Inecure Kernel Module
+
+Ever wanted to inject some machine code into the kernel and excute it?
+This little module will do that for you.
+
+I've only run this on x86 but I see no reason why it wouldn't work on
+ARM. It would just be poorly named in that case.
+
+* Why?
+
+- Why not?
+- Baby's first root shell
+- Debug your kernel exploit payloads
+
+* How?
+
+: make
+: insmod ring0.ko
+: chmod a+r /dev/ring0
+
+#+BEGIN_SRC c
+// user.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
+#define R0_COPY _IOW('a', 0, char*)
+#define R0_EXEC _IOW('a', 1, void*)
+
+static char buf[0x1000] = "\x48\xc7\xc0\x2a\x00\x00\x00\xc3" // mov rax, 42 ; ret
+
+int main(void)
+{
+        int fd;
+        long r;
+        fd = open("/dev/ring0", O_RDONLY);
+        if (fd < 0) {
+                printf("Couldn't open: %d\n", fd);
+                return -1;
+        }
+        r = ioctl(fd, R0_COPY, buf);
+        r = ioctl(fd, R0_EXEC, 0);
+        printf("Got: %lu\n", r);
+        close(fd);
+        return 0;
+}
+#+END_SRC
+
+: $ cc -o user user.c
+: $ ./user
+: Got: 42

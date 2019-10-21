@@ -1,0 +1,7 @@
+.*
+Module.symvers
+modules.order
+ring0.ko
+ring0.mod.c
+ring0.mod.o
+ring0.o
